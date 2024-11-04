@@ -1,0 +1,13 @@
+digraph G {
+  rankdir = "RL";
+  node [shape = rect, fontname = "sans-serif"];
+  "aws_subnet.private1" [label="aws_subnet.private1"];
+  "aws_subnet.private2" [label="aws_subnet.private2"];
+  "aws_subnet.public1" [label="aws_subnet.public1"];
+  "aws_subnet.public2" [label="aws_subnet.public2"];
+  "aws_vpc.wordpress" [label="aws_vpc.wordpress"];
+  "aws_subnet.private1" -> "aws_vpc.wordpress";
+  "aws_subnet.private2" -> "aws_vpc.wordpress";
+  "aws_subnet.public1" -> "aws_vpc.wordpress";
+  "aws_subnet.public2" -> "aws_vpc.wordpress";
+}
