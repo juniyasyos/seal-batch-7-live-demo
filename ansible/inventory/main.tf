@@ -144,7 +144,9 @@ resource "aws_instance" "this" {
 
 }
 
-# resource "local_file" "inventory" {
-#   content  = "[webservers]\n${join("\n", [for instance in aws_instance.this : instance.public_ip])}"
-#   filename = "inventory.ini"
-# }
+resource "local_file" "inventory" {
+  content  = "[webservers]\n${join("\n", [for instance in aws_instance.this : instance.public_ip])}"
+  filename = "inventory.ini"
+}
+
+# terraform execute ansible cli
