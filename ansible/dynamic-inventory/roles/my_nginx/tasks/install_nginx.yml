@@ -1,0 +1,20 @@
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Make webpage
+  ansible.builtin.copy:
+    src: ../templates/index.html
+    dest: /var/www/html/index.html
+    ## bisa juga pake kaya gini
+    # content: |
+    #   <html>
+    #     <h1>testing</h1>
+    #   </html>
+
+- name: Start Nginx Service
+  service:
+    name: nginx
+    state: restarted
+    enabled: true

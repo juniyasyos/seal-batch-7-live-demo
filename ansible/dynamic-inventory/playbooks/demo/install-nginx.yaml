@@ -2,23 +2,21 @@
   hosts: all
   become: yes
   tasks:
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
+    - name: Echo message and connection type
+      ansible.builtin.shell: "echo '{{  message | default('hello world')  }}' ; echo 'Connection type: {{ ansible_connection }}'"
+      register: echo_output
 
-    - name: Make webpage
-      ansible.builtin.copy:
-        src: ../../templates/index.html
-        dest: /var/www/html/index.html
-        ## bisa juga pake kaya gini
-        # content: |
-        #   <html>
-        #     <h1>testing</h1>
-        #   </html>
+    - name: Display output
+      ansible.builtin.debug:
+        msg: "{{ echo_output }}"
 
-    - name: Start Nginx Service
-      service:
-        name: nginx
-        state: restarted
-        enabled: true
+    - name: Display output
+      ansible.builtin.debug:
+        msg: "{{ echo_output.stdout_lines }}"
+
+    - name: Display output
+      ansible.builtin.debug:
+        msg: "{{ echo_output.stdout_lines[0] }}"
+    - name: Starting nginx installation sequence
+      ansible.builtin.include_role:
+        name: my_nginx
