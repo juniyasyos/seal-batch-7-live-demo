@@ -21,3 +21,8 @@
 ```bash
 ansible all -i inventory.ini -m ping --private-key=mykey.pem
 ```
+
+kalo mau pindah ke prod pake config yang prod_ansible ya
+```bash
+ANSIBLE_CONFIG=prod_ansible.cfg ansible-playbook ./playbooks/demo/install-nginx.yaml -l 3.88.40.75 --extra-vars "@./vars/secrets.yml"
+```
