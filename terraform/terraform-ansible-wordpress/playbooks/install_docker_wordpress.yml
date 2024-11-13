@@ -1,0 +1,88 @@
+---
+- name: Install docker, docker compose, and wordpress
+  hosts: all
+  become: true
+  tasks:
+    - name: Load environment variables from env.yml
+      include_vars:
+        file: ../env.yml
+        name: env_vars
+    # step 1: Install requirements for docker
+    - name: Install required packages for docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
+    # step 2: Add Docker GPG Key
+    - name: Add Docker's official GPG Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    # step 3: Setup Docker Stable repository
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+    # step 4: Install Docker
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    # step 5: Install Docker compose
+    - name: Install Docker compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ docker_version | default('2.3.3') }}/docker-compose-{{ ansible_system }}-{{ ansible_architecture }}"
+        dest: /usr/local/bin/docker-compose
+        mode: "0755"
+
+    # step 6: Start and enable Docker service
+    - name: Ensure docker is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    # step 7: Create directory for wordpress Setup
+    - name: create a directory for wordpress
+      file:
+        path: /opt/wordpress
+        state: directory
+        mode: "0755"
+
+    # step 8: Create docker compose file for wordpress and mysql
+    - name: Create Docker Compose file for WordPress and MySQL
+      copy:
+        dest: /opt/wordpress/docker-compose.yml
+        content: |
+          version: '3'
+          services:
+            wordpress:
+              image: wordpress:latest
+              ports:
+                - "80:80"
+              restart: always
+              environment:
+                WORDPRESS_DB_HOST: "{{ env_vars.wordpress_db_host }}"
+                WORDPRESS_DB_USER: "{{ env_vars.wordpress_db_user }}"
+                WORDPRESS_DB_PASSWORD: "{{ env_vars.wordpress_db_password }}"
+                WORDPRESS_DB_NAME: "{{ env_vars.wordpress_db_name }}"
+          volumes:
+            db_data: {}
+
+    # step 9 : Run docker compose
+    - name: Run `docker-compose up`
+      community.docker.docker_compose_v2:
+        project_src: /opt/wordpress
+        build: always
+        wait: true
+        docker_cli: /usr/bin/docker
+      register: output
+    - name: show results
+      debug:
+        var: output

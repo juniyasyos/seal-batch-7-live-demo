@@ -31,4 +31,32 @@ module "myrds" {
 
 }
 
+# create env.yml for ansible
+resource "local_file" "env_file" {
+  content  = <<EOT
+  wordpress_db_host: ${split(":", module.myrds.rds_endpoint[0])[0]}
+  wordpress_db_user: ${var.username}
+  wordpress_db_password: ${var.password}
+  wordpress_db_name: ${var.db_name}
+  EOT
+  filename = "${path.module}/env.yml"
+}
+
 # call ansible command to install wordpress inside docker
+resource "null_resource" "execute_ansible" {
+  depends_on = [module.myrds, module.myvpc]
+  provisioner "remote-exec" {
+    connection {
+      host        = module.myvpc.aws_instance_public_ip
+      user        = "ubuntu"
+      private_key = file("${path.module}/${var.key_name}_${var.env}.pem")
+    }
+
+    inline = ["echo 'connected!'"]
+  }
+
+  provisioner "local-exec" {
+    command     = "ansible-playbook ./playbooks/install_docker_wordpress.yml --extra-vars '@env.yml'"
+    working_dir = path.module
+  }
+}
