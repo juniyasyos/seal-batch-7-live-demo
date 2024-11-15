@@ -1,0 +1,21 @@
+---
+
+- name: APACHE_EXPORTER | Check
+  include_tasks: check.yml
+  tags:
+    - apache_exporter_check
+
+- name: APACHE_EXPORTER | Install
+  include_tasks: install.yml
+  tags:
+    - apache_exporter_install
+
+- name: APACHE_EXPORTER | Configure
+  include_tasks: config.yml
+  tags:
+    - apache_exporter_configure
+
+- name: APACHE_EXPORTER | Service
+  include_tasks: service.yml
+  tags:
+    - apache_exporter_service

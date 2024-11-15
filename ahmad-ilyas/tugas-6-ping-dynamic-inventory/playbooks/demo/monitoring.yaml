@@ -1,0 +1,7 @@
+---
+- name: Install and configure NGINX and Apache Exporter
+  hosts: all
+  become: yes
+  roles:
+    - nginxinc.nginx 
+    - narutox900.prometheus_apache_exporter_role 

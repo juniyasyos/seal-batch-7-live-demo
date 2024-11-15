@@ -176,6 +176,7 @@ resource "aws_instance" "wordpress" {
   subnet_id                   = aws_subnet.public1.id
   security_groups             = [aws_security_group.allow_ssh.id]
   associate_public_ip_address = true
+
 }
 
 # rds subnet

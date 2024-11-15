@@ -28,7 +28,6 @@ module "myrds" {
   backup_window          = "03:00-06:00"
   vpc_security_group_ids = module.myvpc.rds_security_group_ids
   db_subnet_group_name   = "rds-subnet-group"
-
 }
 
 # create env.yml for ansible

@@ -1,0 +1,33 @@
+- name: Configure Web Servers
+  hosts: all
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Update apt package index
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Ensure Nginx is started and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Create custom index.html with "Hello World"
+      ansible.builtin.copy:
+        content: "Hello World"
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Open HTTP port in UFW
+      ansible.builtin.ufw:
+        rule: allow
+        name: 'Nginx HTTP'
+        state: enabled

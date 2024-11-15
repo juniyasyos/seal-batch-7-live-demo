@@ -1,0 +1,23 @@
+- name: Configure Web Servers
+  hosts: all
+  become: yes
+  gather_facts: true
+  tasks:
+    # - name: Echo message and connection type
+    #   ansible.builtin.shell: "echo '{{  message | default('hello world')  }}' ; echo 'Connection type: {{ ansible_connection }}'"
+    #   register: echo_output
+
+    # - name: Display output
+    #   ansible.builtin.debug:
+    #     msg: "{{ echo_output }}"
+
+    # - name: Display output
+    #   ansible.builtin.debug:
+    #     msg: "{{ echo_output.stdout_lines }}"
+
+    # - name: Display output
+    #   ansible.builtin.debug:
+    #     msg: "{{ echo_output.stdout_lines[0] }}"
+    - name: Starting nginx installation sequence
+      ansible.builtin.include_role:
+        name: my_nginx
