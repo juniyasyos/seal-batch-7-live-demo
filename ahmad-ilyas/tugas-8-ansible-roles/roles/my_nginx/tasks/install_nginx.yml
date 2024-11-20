@@ -1,0 +1,49 @@
+- name: Checking distro being used
+  ansible.builtin.debug:
+    msg: "{{ansible_os_family}}"
+
+- name: Install Nginx
+  when: ansible_os_family == "Debian"
+  apt:
+    name: nginx
+    state: present
+
+- name: Install Nginx
+  when: ansible_os_family == "RedHat"
+  yum:
+    name: nginx
+    state: present
+
+- name: Check if index.html is exist
+  delegate_to: localhost
+  stat:
+    path: /home/bilal/office/seal/live-demo/ansible/dynamic-inventory/roles/my_nginx/templates/index.html # correct path
+    # path: /home/bilal/office/seal/live-demo/ansible/dynamic-inventory/wdawa/my_nginx/templates/index.html # wrong path
+  register: is_html_exist
+
+- name: executing if index.html exist
+  when: is_html_exist.stat.exists and is_html_exist.stat.mimetype == "text/html"
+  block:
+    - name: Copy task
+      block:
+        - name: Copying task
+          debug:
+            msg: "Copying file is in progress"
+        - name: Make webpage
+          ansible.builtin.copy:
+            src: ../templates/index.html
+            dest: /var/www/html/index.html
+      rescue:
+        - name: Print when errors
+          ansible.builtin.debug:
+            msg: "the correct path should be ../templates/index.html"
+
+    - name: Restart Nginx Service
+      service:
+        name: nginx
+        state: restarted
+        enabled: true
+- name: Tell user if index.html is not exist
+  when: not is_html_exist.stat.exists and is_html_exist.stat.mimetype != "text/html"
+  debug:
+    msg: "unfortunately file is not exist!"

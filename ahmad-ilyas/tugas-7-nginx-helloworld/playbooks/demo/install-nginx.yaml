@@ -3,31 +3,52 @@
   become: yes
   gather_facts: true
   tasks:
-    - name: Update apt package index
-      ansible.builtin.apt:
-        update_cache: yes
+    - name: Checking distro being used
+      ansible.builtin.debug:
+        msg: "Operating System Family: {{ ansible_os_family }}"
 
-    - name: Install Nginx
+    - name: Install Nginx on Debian-based systems
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt:
         name: nginx
         state: present
+        update_cache: yes
 
-    - name: Ensure Nginx is started and enabled
-      ansible.builtin.service:
+    - name: Install Nginx on RedHat-based systems
+      when: ansible_os_family == "RedHat"
+      ansible.builtin.yum:
         name: nginx
-        state: started
-        enabled: yes
+        state: present
 
-    - name: Create custom index.html with "Hello World"
-      ansible.builtin.copy:
-        content: "Hello World"
-        dest: /var/www/html/index.html
-        owner: www-data
-        group: www-data
-        mode: '0644'
+    - name: Check if index.html exists
+      delegate_to: localhost
+      ansible.builtin.stat:
+        path: /root/seal-batch-7-live-demo/ahmad-ilyas/tugas-7-nginx-helloworld/templates/index.html
+      register: is_html_exist
 
-    - name: Open HTTP port in UFW
-      ansible.builtin.ufw:
-        rule: allow
-        name: 'Nginx HTTP'
-        state: enabled
+    - name: Handle index.html if it exists
+      when: is_html_exist.stat.exists
+      block:
+        - name: Notify file copying in progress
+          ansible.builtin.debug:
+            msg: "Copying index.html file to the web server..."
+
+        - name: Copy index.html to web server directory
+          ansible.builtin.copy:
+            src: /root/seal-batch-7-live-demo/ahmad-ilyas/tugas-7-nginx-helloworld/templates/index.html
+            dest: /var/www/html/index.html
+
+        - name: Restart Nginx service
+          ansible.builtin.service:
+            name: nginx
+            state: restarted
+            enabled: true
+      rescue:
+        - name: Print error during copy
+          ansible.builtin.debug:
+            msg: "Error: Ensure the file exists at the correct path and try again."
+
+    - name: Notify user if index.html does not exist
+      when: not is_html_exist.stat.exists
+      ansible.builtin.debug:
+        msg: "Unfortunately, the file does not exist!"

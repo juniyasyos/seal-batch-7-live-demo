@@ -1,0 +1,49 @@
+- name: Deploy Koel using Docker with RDS
+  hosts: tag_koel_server
+  become: yes
+  tasks:
+    - name: Create directories for volumes
+      ansible.builtin.file:
+        path: "/opt/koel/{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop:
+        - music
+        - covers
+        - search_index
+
+    - name: Create a Docker network
+      community.docker.docker_network:
+        name: koel-net
+        state: present
+        driver: bridge
+
+    - name: Start Koel container with RDS
+      community.docker.docker_container:
+        name: koel
+        image: phanan/koel
+        state: started
+        restart_policy: always
+        networks:
+          - name: koel-net
+        ports:
+          - "80:80"
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: koeldb.cufgtsltmyyj.us-east-1.rds.amazonaws.com
+          DB_DATABASE: koeldb
+          DB_USERNAME: koel
+          DB_PASSWORD: password
+        volumes:
+          - /opt/koel/music:/music
+          - /opt/koel/covers:/var/www/html/public/img/covers
+          - /opt/koel/search_index:/var/www/html/storage/search-indexes
+
+    - name: Initialize Koel
+      ansible.builtin.command:
+        cmd: "docker exec --user www-data koel php artisan koel:init --no-assets"
+        creates: "/opt/koel/.initialized"
+      args:
+        creates: /opt/koel/.initialized

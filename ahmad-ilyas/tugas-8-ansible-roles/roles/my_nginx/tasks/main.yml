@@ -1,0 +1,4 @@
+---
+# tasks file for my_nginx
+- name: Install nginx
+  ansible.builtin.include_tasks: install_nginx.yml

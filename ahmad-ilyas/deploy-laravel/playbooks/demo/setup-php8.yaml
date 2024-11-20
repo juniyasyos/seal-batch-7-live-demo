@@ -1,0 +1,166 @@
+---
+- name: Install PHP 8.3, extensions, and configure Composer
+  hosts: all
+  become: yes
+  tasks:
+
+    # Menentukan distro yang digunakan
+    - name: Checking distro being used
+      ansible.builtin.debug:
+        msg: "The operating system family is {{ ansible_os_family }}"
+
+    # Instal PHP 8.3 pada sistem berbasis Debian/Ubuntu
+    - name: Add PPA for PHP 8.3 (Debian/Ubuntu)
+      when: ansible_os_family == "Debian"
+      apt_repository:
+        repo: ppa:ondrej/php
+        state: present
+
+    - name: Install PHP 8.3 and extensions on Debian-based systems
+      when: ansible_os_family == "Debian"
+      apt:
+        name:
+          - php8.3
+          - php8.3-cli
+          - php8.3-fpm
+          - php8.3-mysql
+          - php8.3-xml
+          - php8.3-mbstring
+          - php8.3-curl
+          - php8.3-zip
+          - php8.3-intl
+          - php8.3-opcache
+          - php8.3-pdo
+          - php8.3-ctype
+          - php8.3-exif
+          - php8.3-ffi
+          - php8.3-fileinfo
+          - php8.3-ftp
+          - php8.3-gettext
+          - php8.3-iconv
+          - php8.3-phar
+          - php8.3-posix
+          - php8.3-readline
+          - php8.3-shmop
+          - php8.3-sockets
+          - php8.3-sysvmsg
+          - php8.3-sysvsem
+          - php8.3-sysvshm
+          - php8.3-tokenizer
+          - php8.3-bcmath  # Menginstal ekstensi bcmath
+        state: present
+        update_cache: yes
+
+    # Instal PHP 8.3 pada sistem berbasis RedHat/CentOS/Fedora
+    - name: Install PHP 8.3 from Remi repository (RedHat/CentOS)
+      when: ansible_os_family == "RedHat"
+      yum:
+        name:
+          - "php"
+          - "php-cli"
+          - "php-fpm"
+          - "php-mysqlnd"
+          - "php-xml"
+          - "php-mbstring"
+          - "php-json"
+          - "php-curl"
+          - "php-zip"
+          - "php-intl"
+          - "php-opcache"
+          - "php-pdo"
+          - "php-mbstring"
+          - "php-ctype"
+          - "php-exif"
+          - "php-ffi"
+          - "php-fileinfo"
+          - "php-ftp"
+          - "php-gettext"
+          - "php-iconv"
+          - "php-phar"
+          - "php-posix"
+          - "php-readline"
+          - "php-shmop"
+          - "php-sockets"
+          - "php-sysvmsg"
+          - "php-sysvsem"
+          - "php-sysvshm"
+          - "php-tokenizer"
+          - "php-bcmath"  # Menginstal ekstensi bcmath untuk RedHat
+        state: present
+
+    # Menambahkan repositori Remi untuk PHP 8.3 pada CentOS/RHEL
+    - name: Enable Remi repository for PHP 8.3 (RedHat/CentOS)
+      when: ansible_os_family == "RedHat"
+      yum:
+        name: "yum-utils"
+        state: present
+
+    - name: Enable Remi repository for PHP 8.3 (RedHat/CentOS)
+      when: ansible_os_family == "RedHat"
+      command: yum-config-manager --enable remi-php83
+      register: remi_repo_enable
+
+    # Instal PHP 8.3 dari repositori Remi jika repositori berhasil diaktifkan
+    - name: Install PHP 8.3 from Remi repository (RedHat/CentOS)
+      when: ansible_os_family == "RedHat" and remi_repo_enable.changed == true
+      yum:
+        name:
+          - "php"
+          - "php-cli"
+          - "php-fpm"
+          - "php-mysqlnd"
+          - "php-xml"
+          - "php-mbstring"
+          - "php-json"
+          - "php-curl"
+          - "php-zip"
+          - "php-intl"
+          - "php-bcmath"  # Menginstal ekstensi bcmath untuk RedHat
+        state: present
+
+    # Menginstal Composer
+    - name: Install Composer globally
+      when: ansible_os_family == "Debian"
+      shell: |
+        curl -sS https://getcomposer.org/installer | php
+        mv composer.phar /usr/local/bin/composer
+
+    - name: Install Composer globally (RedHat/CentOS)
+      when: ansible_os_family == "RedHat"
+      shell: |
+        curl -sS https://getcomposer.org/installer | php
+        mv composer.phar /usr/local/bin/composer
+
+    # Mengaktifkan dan memulai PHP-FPM (FastCGI Process Manager) di Debian
+    - name: Ensure PHP-FPM is started and enabled (Debian)
+      ansible.builtin.service:
+        name: php8.3-fpm
+        state: started
+        enabled: yes
+      when: ansible_os_family == "Debian"
+
+    # Mengaktifkan dan memulai PHP-FPM di RedHat
+    - name: Ensure PHP-FPM is started and enabled (RedHat)
+      ansible.builtin.service:
+        name: php-fpm
+        state: started
+        enabled: yes
+      when: ansible_os_family == "RedHat"
+
+    # Verifikasi versi PHP yang terinstal
+    - name: Display PHP version
+      command: php -v
+      register: php_version
+
+    - name: Show PHP version
+      ansible.builtin.debug:
+        msg: "PHP Version: {{ php_version.stdout }}"
+
+    # Verifikasi ekstensi PHP yang terinstal
+    - name: Display installed PHP extensions
+      command: php -m
+      register: php_extensions
+
+    - name: Show PHP extensions
+      ansible.builtin.debug:
+        msg: "Installed PHP extensions: {{ php_extensions.stdout_lines }}"
