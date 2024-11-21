@@ -48,11 +48,8 @@
 
   - name: Start Docker Compose Services for InfluxDB and Grafana
     ansible.builtin.command:
-      cmd: |
-        cd "{{ repo_dest }}"
-        docker compose up -d {{ docker_services | join(' ') }}
-    args:
-      executable: /bin/bash
+      cmd: docker compose up -d influxdb grafana
+      chdir: /opt/k6_repo
 
   - name: Run Load Test with K6
     ansible.builtin.shell:
