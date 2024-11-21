@@ -1,6 +1,6 @@
 ---
 - name: Deploy Grafana K6 Configuration to Remote Servers
-  hosts: tag_learning_monitoring  # AWS tag untuk dynamic inventory
+  hosts: tag_testing_server_grafana_k6
   become: true
 
   vars:
