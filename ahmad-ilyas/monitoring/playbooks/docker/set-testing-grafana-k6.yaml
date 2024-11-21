@@ -5,64 +5,59 @@
 
   vars:
     repository_url: "https://github.com/agungnusako/k6"
-    docker_services: ["influxdb", "grafana"]
+    repo_dest: "/opt/k6_repo"
+    docker_services: [ "influxdb", "grafana" ]
     load_test_file: "/opt/k6_repo/test/load.js"
+    influxdb_url: "http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:8086"
+    k6_binary_path: "/snap/bin/k6"
 
   tasks:
-    - name: Install K6 via Snap
-      ansible.builtin.package:
-        name: snapd
-        state: present
-      become: true
+  - name: Install Snap if not installed
+    ansible.builtin.package:
+      name: snapd
+      state: present
 
-    - name: Ensure K6 is installed
-      ansible.builtin.shell:
-        cmd: sudo snap install k6
-      args:
-        executable: /bin/bash
+  - name: Install K6 if not already installed
+    ansible.builtin.command:
+      cmd: snap list k6
+    register: snap_k6_check
+    failed_when: false
+    changed_when: snap_k6_check.rc != 0
 
-    - name: Clone Repository Grafana K6
-      ansible.builtin.git:
-        repo: "{{ repository_url }}"
-        dest: /opt/k6_repo
-        version: main
+  - name: Install K6 via Snap if not already installed
+    ansible.builtin.command:
+      cmd: sudo snap install k6
+    when: snap_k6_check.rc != 0
 
-    - name: Start Docker Compose Services for InfluxDB and Grafana
-      ansible.builtin.shell:
-        cmd: |
-          cd /opt/k6_repo
-          sudo docker compose up -d {{ docker_services | join(' ') }}
-      args:
-        executable: /bin/bash
+  - name: Clone Repository Grafana K6 if not already cloned
+    ansible.builtin.git:
+      repo: "{{ repository_url }}"
+      dest: "{{ repo_dest }}"
+      update: no
 
-    - name: Generate Load Test Script
-      ansible.builtin.copy:
-        dest: "{{ load_test_file }}"
-        content: |
-          import http from "k6/http";
-          import { check, sleep } from "k6";
+  - name: Create test directory if it does not exist
+    ansible.builtin.file:
+      path: "{{ repo_dest }}/test"
+      state: directory
+      mode: '0755'
 
-          export const options = {
-            thresholds: {
-              http_req_duration: ["p(99) < 3000"], // 99% requests < 3000ms
-            },
-            stages: [
-              { duration: "30s", target: 15 },  // Ramp-up to 15 users in 30s
-              { duration: "1m", target: 15 },   // Stay at 15 users for 1m
-              { duration: "20s", target: 0 },   // Ramp-down to 0 users in 20s
-            ],
-          };
+  - name: Copy Load Test Script from Template
+    ansible.builtin.template:
+      src: templates/grafana-k6/load.js.j2
+      dest: "{{ load_test_file }}"
 
-          export default function () {
-            const res = http.get("http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}/stub_status");
-            check(res, { "status was 200": (r) => r.status == 200 });
-            sleep(1);
-          }
+  - name: Start Docker Compose Services for InfluxDB and Grafana
+    ansible.builtin.command:
+      cmd: |
+        cd "{{ repo_dest }}"
+        docker compose up -d {{ docker_services | join(' ') }}
+    args:
+      executable: /bin/bash
 
-    - name: Run Load Test with K6
-      ansible.builtin.shell:
-        cmd: |
-          cd /opt/k6_repo
-          k6 run --out influxdb=http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:8086 {{ load_test_file }}
-      args:
-        executable: /bin/bash
+  - name: Run Load Test with K6
+    ansible.builtin.shell:
+      cmd: |
+        cd "{{ repo_dest }}"
+        "{{ k6_binary_path }}" run --out influxdb={{ influxdb_url }} {{ load_test_file }}
+    args:
+      executable: /bin/bash
