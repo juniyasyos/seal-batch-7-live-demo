@@ -8,7 +8,7 @@
     repo_dest: "/opt/k6_repo"
     docker_services: [ "influxdb", "grafana" ]
     load_test_file: "/opt/k6_repo/test/load.js"
-    influxdb_url: "http://{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}:8086"
+    influxdb_url: "http://{{ hostvars[groups['tag_learning_monitoring'][0]].ansible_host }}:8086"
     k6_binary_path: "/snap/bin/k6"
 
   tasks:
