@@ -1,5 +1,5 @@
 - name: Deploy Docker Configuration to Remote Server using synchronize
-  hosts: all
+  hosts: tag_learnig_monitoring
   become: true
 
   tasks:

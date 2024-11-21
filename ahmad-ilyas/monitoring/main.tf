@@ -164,6 +164,14 @@ resource "aws_security_group" "monitoring-allow-ports" {
     protocol      = "tcp"
     cidr_blocks   = ["0.0.0.0/0"]
   }
+
+  ingress {
+    description   = "Grafana K6 testing Monitoring Port 8086"
+    from_port     = 8086
+    to_port       = 8086
+    protocol      = "tcp"
+    cidr_blocks   = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_instance" "this" {
@@ -178,5 +186,4 @@ resource "aws_instance" "this" {
   tags = {
     Name = each.key
   }
-
 }
