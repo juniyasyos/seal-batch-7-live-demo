@@ -5,7 +5,7 @@
   tasks:
     - name: Synchronize Docker configuration folder to remote server
       ansible.builtin.synchronize:
-        src: ./tamplates/monitoring/
+        src: /root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/tamplates/monitoring/
         dest: /home/{{ ansible_user }}/monitoring_config/
         mode: push
         recursive: yes
