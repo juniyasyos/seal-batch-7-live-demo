@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Hentikan skrip jika ada kesalahan
+set -e
+
+# Fungsi bantuan
+show_help() {
+  echo "Usage: deploy [options]"
+  echo ""
+  echo "Options:"
+  echo "  --task-all              Jalankan semua task (default)."
+  echo "  --skip-terraform-apply  Lewati proses 'terraform apply'."
+  echo "  --skip-ansible          Lewati semua task Ansible."
+  echo "  --help                  Tampilkan bantuan ini."
+  echo ""
+}
+
+# Inisialisasi variabel default
+TASK_ALL=true
+SKIP_TERRAFORM_APPLY=false
+SKIP_ANSIBLE=false
+
+# Parsing argumen
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+    --task-all) TASK_ALL=true ;;
+    --skip-terraform-apply) SKIP_TERRAFORM_APPLY=true ;;
+    --skip-ansible) SKIP_ANSIBLE=true ;;
+    --help) show_help; exit 0 ;;
+    *) echo "Unknown option: $1"; show_help; exit 1 ;;
+  esac
+  shift
+done
+
+# 1. Inisialisasi Terraform dan Terraform Apply
+if [[ "$TASK_ALL" == true || "$SKIP_TERRAFORM_APPLY" == false ]]; then
+  echo "==> Inisialisasi Terraform"
+  terraform init
+
+  if [ ! -f "terraform.tfstate" ] || [ "$TASK_ALL" == true ]; then
+    echo "==> File terraform.tfstate tidak ditemukan, atau --task-all aktif, menjalankan terraform apply"
+    terraform apply -auto-approve
+  else
+    echo "==> terraform.tfstate ditemukan, melewati terraform apply"
+  fi
+else
+  echo "==> Lewati proses Terraform Apply (--skip-terraform-apply)"
+fi
+
+# 2. Menjalankan task Ansible
+if [[ "$TASK_ALL" == true && "$SKIP_ANSIBLE" == false ]]; then
+  echo "==> Menjalankan playbook Ansible"
+
+  playbooks=(
+    "./playbooks/docker/install-docker.yaml"
+    "./playbooks/docker/set-docker-compose-monitoring.yaml"
+    "./playbooks/docker/set-testing-grafana-k6.yaml"
+  )
+
+  for playbook in "${playbooks[@]}"; do
+    echo "==> Menjalankan playbook: $playbook"
+    ansible-playbook "$playbook"
+  done
+else
+  echo "==> Lewati proses Ansible (--skip-ansible)"
+fi
+
+echo "==> Deployment selesai."

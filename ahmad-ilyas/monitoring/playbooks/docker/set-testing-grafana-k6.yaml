@@ -43,7 +43,7 @@
 
   - name: Copy Load Test Script from Template
     ansible.builtin.template:
-      src: templates/grafana-k6/load.js.j2
+      src: ./templates/grafana-k6/load.js.j2
       dest: "{{ load_test_file }}"
 
   - name: Start Docker Compose Services for InfluxDB and Grafana
