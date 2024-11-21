@@ -43,7 +43,6 @@ echo "==> Menjalankan playbook Ansible"
 
 playbooks=(
   "./playbooks/docker/install-docker.yaml"
-  "./playbooks/docker/uninstall-docker.yaml"
   "./playbooks/docker/set-docker-compose-monitoring.yaml"
   "./playbooks/docker/set-testing-grafana-k6.yaml"
 )
