@@ -1,57 +1,9 @@
 ---
-- name: Deploy Grafana K6 Configuration to Remote Servers
-  hosts: tag_testing_server_grafana_k6
-  become: true
-
-  vars:
-    repository_url: "https://github.com/agungnusako/k6"
-    repo_dest: "/opt/k6_repo"
-    docker_services: [ "influxdb", "grafana" ]
-    load_test_file: "/opt/k6_repo/test/load.js"
-    influxdb_url: "http://{{ hostvars[groups['tag_learning_monitoring'][0]].ansible_host }}:8086"
-    k6_binary_path: "/snap/bin/k6"
+- name: Retrieve All Private IP Addresses from Hosts with Specific Tags
+  hosts: tag_learnig_monitoring 
+  gather_facts: yes
 
   tasks:
-  - name: Install Snap if not installed
-    ansible.builtin.package:
-      name: snapd
-      state: present
-
-  - name: Install K6 if not already installed
-    ansible.builtin.command:
-      cmd: snap list k6
-    register: snap_k6_check
-    failed_when: false
-    changed_when: snap_k6_check.rc != 0
-
-  - name: Install K6 via Snap if not already installed
-    ansible.builtin.command:
-      cmd: sudo snap install k6
-    when: snap_k6_check.rc != 0
-
-  - name: Clone Repository Grafana K6 if not already cloned
-    ansible.builtin.git:
-      repo: "{{ repository_url }}"
-      dest: "{{ repo_dest }}"
-      update: no
-
-  - name: Create test directory if it does not exist
-    ansible.builtin.file:
-      path: "{{ repo_dest }}/test"
-      state: directory
-      mode: '0755'
-
-  - name: Copy Load Test Script from Template
-    ansible.builtin.template:
-      src: /root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/tamplates/grafana-k6/load.js.j2
-      dest: "{{ load_test_file }}"
-
-  - name: Start Docker Compose Services for InfluxDB and Grafana
-    ansible.builtin.command:
-      cmd: docker compose up -d influxdb grafana
-      chdir: /opt/k6_repo
-
-  - name: Run Load Test with K6
-    ansible.builtin.command:
-      cmd: run --out influxdb={{ influxdb_url }} {{ load_test_file }}
-      chdir: /opt/k6_repo
+    - name: Debug Retrieved Private IPs
+      ansible.builtin.debug:
+        msg: "Private IP address of host {{ inventory_hostname }}"

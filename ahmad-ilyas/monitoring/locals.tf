@@ -9,9 +9,5 @@ locals {
       ami           = data.aws_ami.ubuntu.id
       instance_type = "t2.small"
     }
-    testing-server-grafana-k6 = {
-      ami           = data.aws_ami.ubuntu.id
-      instance_type = "t2.micro"
-    }
   }
 }
