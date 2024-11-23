@@ -56,8 +56,6 @@ Hasilnya akan menampilkan konfigurasi dua server, termasuk **Public IP** untuk P
    - **Username:** `admin`  
    - **Password:** `my-password-grafana`  
 
-3. Setelah login, ubah password default.
-
 ---
 
 ### **c. Setup Dashboard Grafana**
