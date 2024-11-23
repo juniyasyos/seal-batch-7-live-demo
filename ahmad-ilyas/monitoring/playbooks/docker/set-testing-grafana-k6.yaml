@@ -1,9 +1,47 @@
 ---
-- name: Retrieve All Private IP Addresses from Hosts with Specific Tags
-  hosts: tag_learnig_monitoring 
-  gather_facts: yes
+- name: Deploy Grafana K6 Configuration to Remote Servers
+  hosts: tag_testing_k6
+  become: true
+
+  vars:
+    repository_url: "https://github.com/agungnusako/k6"
+    repo_dest: "/opt/k6_repo"
+    load_test_file: "/opt/k6_repo/test/load.js"
+    k6_binary_path: "/snap/bin/k6"
 
   tasks:
-    - name: Debug Retrieved Private IPs
-      ansible.builtin.debug:
-        msg: "Private IP address of host {{ inventory_hostname }}"
+  - name: Install Snap if not installed
+    ansible.builtin.package:
+      name: snapd
+      state: present
+
+  - name: Ensure Snap service is started
+    ansible.builtin.service:
+      name: snapd
+      state: started
+      enabled: true
+
+  - name: Check if K6 is installed
+    ansible.builtin.command:
+      cmd: snap list k6
+    register: snap_k6_check
+    failed_when: false
+    changed_when: snap_k6_check.rc != 0
+
+  - name: Install K6 via Snap if not installed
+    ansible.builtin.command:
+      cmd: snap install k6
+    when: snap_k6_check.rc != 0
+
+  - name: Clone Repository Grafana K6 if not already cloned
+    ansible.builtin.git:
+      repo: "{{ repository_url }}"
+      dest: "{{ repo_dest }}"
+      update: no
+
+  - name: Ensure Docker Compose is up
+    ansible.builtin.shell:
+      cmd: |
+        docker compose -f /opt/k6_repo/docker-compose.yml up -d influxdb grafana
+    args:
+      executable: /bin/bash

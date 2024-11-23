@@ -5,9 +5,13 @@ locals {
   region                = "us-east-1"
   key_name              = "monitoring"
   instances = {
-    learnig-monitoring = {
+    learnigg-monitoring-k6 = {
       ami           = data.aws_ami.ubuntu.id
-      instance_type = "t2.small"
+      instance_type = "t2.micro"
+    }
+    testing-k6 = {
+      ami           = data.aws_ami.ubuntu.id
+      instance_type = "t2.micro"
     }
   }
 }
