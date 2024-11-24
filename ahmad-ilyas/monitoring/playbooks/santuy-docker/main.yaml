@@ -77,7 +77,7 @@
   - name: Show the output of the Load Test
     ansible.builtin.debug:
       msg: "{{ load_test_result.stdout }}" 
-    when: load_test_result is defined  
+    when: "'tag_testing_server' in group_names"
     tags:
       - load_test
 

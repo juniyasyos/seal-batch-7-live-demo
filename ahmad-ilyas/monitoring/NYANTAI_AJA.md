@@ -68,7 +68,7 @@ chmod +x ./nyantai
 ### **a. Persiapan Instance Testing**
 1. untuk melakukan testing berulang ulang cukup menjalanan perintah:
    ```bash
-   ansible-playbook ./playbooks/docker-santuy/main.yaml --tags load_test 
+   ansible-playbook ./playbooks/santuy-docker/main.yaml --tags load_test 
    ```
 
 ---
