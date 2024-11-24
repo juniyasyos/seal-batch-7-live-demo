@@ -70,6 +70,7 @@ chmod +x ./nyantai
    ```bash
    ansible-playbook ./playbooks/santuy-docker/main.yaml --tags load_test 
    ```
+2. Untuk melihat hasil output pengujian pergi ke file `./playbooks/santuy-docker/load_test_result.txt`
 
 ---
 
