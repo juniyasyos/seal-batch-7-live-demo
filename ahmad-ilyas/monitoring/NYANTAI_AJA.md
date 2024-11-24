@@ -119,7 +119,7 @@ maka akan terjadi proses seperti ini
 ![Result Testing](docs/final-testing-result.png)
 
 dan gambar dibawah ini merupakan bukti bahwa pengujian berjalan dengan baik
-![Result Testing](docs/grafana-dashboard.png)
+![Result Testing](docs/monitoring-testing.png)
 
 Berikut penjelasan dari output tersebut:
 
