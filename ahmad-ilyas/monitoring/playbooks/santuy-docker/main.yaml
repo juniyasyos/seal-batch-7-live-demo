@@ -72,14 +72,14 @@
     register: load_test_result
     when: "'tag_testing_server' in group_names"
     tags:
-      - load_test
+    - load_test
 
-  - name: Save the output of the Load Test to a file
-    ansible.builtin.copy:
+  - name: Save the output of the Load Test to a local file
+    local_action:
+      module: copy
       content: "{{ load_test_result.stdout }}"
-      dest: "/root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/test_result.txt"
+      dest: "./load_test_result.txt"
     when: "'tag_testing_server' in group_names"
     tags:
       - load_test
-
 
