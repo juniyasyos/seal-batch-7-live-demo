@@ -1,20 +1,13 @@
-- name: Deploy Docker Configuration to Remote Server using synchronize
-  hosts: tag_learnigg_monitoring_k6
-  become: true
-  vars:
-    grafana_api_url: "http://{{ ansible_host }}:3030"
+- name: Synchronize Docker configuration folder to remote server
+  ansible.builtin.synchronize:
+    src: /root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/tamplates/monitoring/
+    dest: /home/{{ ansible_user }}/monitoring_config/
+    mode: push
+    recursive: yes
 
-  tasks:
-  - name: Synchronize Docker configuration folder to remote server
-    ansible.builtin.synchronize:
-      src: /root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/tamplates/monitoring/
-      dest: /home/{{ ansible_user }}/monitoring_config/
-      mode: push
-      recursive: yes
-
-  - name: Ensure Docker Compose is up
-    ansible.builtin.shell:
-      cmd: |
-        docker compose -f /home/{{ ansible_user }}/monitoring_config/docker-compose.yml up -d
-    args:
-      executable: /bin/bash
+- name: Ensure Docker Compose is up
+  ansible.builtin.shell:
+    cmd: |
+      docker compose -f /home/{{ ansible_user }}/monitoring_config/docker-compose.yml up -d
+  args:
+    executable: /bin/bash

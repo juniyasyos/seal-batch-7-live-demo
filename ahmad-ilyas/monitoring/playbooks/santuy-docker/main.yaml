@@ -1,0 +1,72 @@
+---
+- name: Deploy Grafana K6 Configuration to Remote Servers
+  hosts: tag_monitoring_testing_k6, tag_testing_server
+  become: true
+  gather_facts: true
+  vars:
+    repository_url: "https://github.com/agungnusako/k6"
+    repo_dest: "/opt/k6_repo"
+    k6_binary_path: "/snap/bin/k6"
+
+  tasks:
+  - name: Set private IP from ansible_default_ipv4.address
+    set_fact:
+      ip_target: "{{ hostvars[groups['tag_monitoring_testing_k6'][0]].ansible_default_ipv4.address }}"
+
+  - name: Check if Docker is installed
+    ansible.builtin.command:
+      cmd: docker --version
+    register: docker_installed
+    failed_when: false
+    changed_when: false
+
+  - name: setup docker and docker-compose
+    ansible.builtin.include_tasks: install-docker.yaml
+    when: docker_installed.rc != 0
+
+  - name: setup server monitoring
+    ansible.builtin.include_tasks: set-docker-compose-monitoring.yaml
+    when: "'tag_monitoring_testing_k6' in group_names"
+
+  - name: setup testing application
+    ansible.builtin.include_tasks: setup-testing.yaml
+    when: "'tag_testing_server' in group_names"
+
+  - name: Create test directory if it does not exist
+    ansible.builtin.file:
+      path: "{{ repo_dest }}/test"
+      state: directory
+      mode: '0755'
+    when: "'tag_testing_server' in group_names"
+
+  - name: Ensure Load Test Script exists
+    ansible.builtin.copy:
+      dest: "/opt/k6_repo/test/load.js"
+      content: |
+        import http from "k6/http";
+        import { check, sleep } from "k6";
+
+        export const options = {
+          thresholds: {
+            http_req_duration: ["p(99) < 3000"],
+          },
+          stages: [
+            { duration: "30s", target: 15 },
+            { duration: "1m", target: 15 },
+            { duration: "20s", target: 0 },
+          ],
+        };
+
+        export default function () {
+          const url = "http://{{ ip_target }}/stub_status";
+          const res = http.get(url);
+          check(res, { "status was 200": (r) => r.status === 200 });
+          sleep(1);
+        }
+    when: "'tag_testing_server' in group_names"
+
+  - name: Run Load Test with K6
+    ansible.builtin.command:
+      cmd: "docker run -v /opt/k6_repo:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
+      chdir: "{{ repo_dest }}"
+    when: "'tag_testing_server' in group_names"

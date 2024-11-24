@@ -1,0 +1,35 @@
+- name: Install Snap if not installed=
+  ansible.builtin.package:
+    name: snapd
+    state: present
+
+- name: Ensure Snap service is started
+  ansible.builtin.service:
+    name: snapd
+    state: started
+    enabled: true
+
+- name: Check if K6 is installed
+  ansible.builtin.command:
+    cmd: snap list k6
+  register: snap_k6_check
+  failed_when: false
+  changed_when: snap_k6_check.rc != 0
+
+- name: Install K6 via Snap if not installed
+  ansible.builtin.command:
+    cmd: snap install k6
+  when: snap_k6_check.rc != 0
+
+- name: Clone Repository Grafana K6 if not already cloned
+  ansible.builtin.git:
+    repo: "{{ repository_url }}"
+    dest: "{{ repo_dest }}"
+    update: no
+
+- name: Ensure Docker Compose is up
+  ansible.builtin.shell:
+    cmd: |
+      docker compose -f /opt/k6_repo/docker-compose.yml up -d influxdb grafana
+  args:
+    executable: /bin/bash

@@ -53,9 +53,7 @@ run_terraform() {
 run_ansible() {
   log "==> Menjalankan playbook Ansible"
   playbooks=(
-    "./playbooks/santuy-docker/install-docker.yaml"
-    "./playbooks/santuy-docker/set-docker-compose-monitoring.yaml"
-    "./playbooks/santuy-docker/set-testing-grafana-k6.yaml"
+    "./playbooks/santuy-docker/main.yaml"
   )
 
   for playbook in "${playbooks[@]}"; do

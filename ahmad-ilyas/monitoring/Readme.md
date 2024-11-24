@@ -37,10 +37,10 @@ Hasilnya akan menampilkan konfigurasi dua server, termasuk **Public IP** untuk P
 ### **a. Akses Prometheus**
 1. Buka browser Anda dan akses:  
    ```
-   http://<public-ip-instance-tag-learning-monitoring>:9099
+   http://<public-ip-tag-monitoring-testing-k6>:9099
    ```
    Untuk IP server, lihat output terakhir dari `./deploy`, yang mencantumkan dua instance. Pilih IP dengan tag:  
-   **`tag_learning_monitoring_k6`**
+   **`tag_monitoring_testing_k6`**
 
 2. Verifikasi *target status* di Prometheus:  
    ![Prometheus](docs/prometheus.png)
