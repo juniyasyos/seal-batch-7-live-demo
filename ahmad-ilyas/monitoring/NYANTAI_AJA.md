@@ -1,8 +1,6 @@
 # **Setup Monitoring Prometheus dan Grafana dengan Terraform dan Ansible**
 
-Dokumen ini menjelaskan cara menyiapkan infrastruktur monitoring menggunakan **Terraform** dan **Ansible**, mengkonfigurasi **Prometheus** dan **Grafana**, serta melakukan pengujian dengan **K6**. Untuk Pengerjaan yg lebih nyantai sillahkan baca ini [![README](https://img.shields.io/badge/README-orange)](NYANTAI_AJA.md)
-
----
+Dokumen ini menjelaskan cara menyiapkan infrastruktur monitoring menggunakan **Terraform** dan **Ansible**, mengkonfigurasi **Prometheus** dan **Grafana**, serta melakukan pengujian dengan **K6**.
 
 ## **1. Persiapan Awal**
 ### **Prasyarat**
@@ -15,22 +13,14 @@ Dokumen ini menjelaskan cara menyiapkan infrastruktur monitoring menggunakan **T
    ```bash
    git clone https://github.com/juniyasyos/seal-batch-7-live-demo.git
    ```
-
----
-
 ## **2. Langkah Penggunaan**
 ### **a. Jalankan Perintah Deploy**
-Dengan satu perintah berikut, infrastruktur server dan instalasi akan dibuat secara otomatis:
+Dengan satu perintah berikut, infrastruktur server dan instalasi akan dibuat secara otomatis dan dengan perintah ini maka anda akan mengotatisasi semua hal.
 ```bash
 cd /root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/
-chmod +x ./deploy
-./deploy
+chmod +x ./nyantai
+./nyantai
 ```
-
-Hasilnya akan menampilkan konfigurasi dua server, termasuk **Public IP** untuk Prometheus dan Grafana.
-
-![Output Deploy](docs/output-deploy.png)
-
 ---
 
 ## **3. Setup Prometheus dan Grafana**
@@ -76,21 +66,14 @@ Hasilnya akan menampilkan konfigurasi dua server, termasuk **Public IP** untuk P
 
 ## **4. Melakukan Testing dengan Grafana K6**
 ### **a. Persiapan Instance Testing**
-1. Gunakan server kedua untuk menjalankan K6. Akses server dengan SSH:  
+1. untuk melakukan testing berulang ulang cukup menjalanan perintah:
    ```bash
-   ssh -i monitoring ubuntu@<ip-tag-testing-k6>
-   ```
-   IP server tersedia di output terakhir `./deploy` dengan tag:  
-   **`testing_k6`**
-
-2. Pastikan Anda masuk ke direktori kerja K6:
-   ```bash
-   cd /opt/k6_repo
+   ansible-playbook ./playbooks/docker-santuy/main.yaml --tags load_test 
    ```
 
 ---
 
-### **b. Membuat Script Pengujian K6**
+### **b. Membuat Script Custom Pengujian K6 (belum Tersedia)**
 Buat file `load.js` di dalam direktori `/opt/k6_repo/test/` dengan isi berikut:
 
 ```javascript
@@ -117,11 +100,11 @@ export default function () {
     sleep(1);
 }
 ```
-- **`<ip-nginx-target>`** adalah IP instance Nginx Anda (yang menjalankan Prometheus).
+- **`<ip-nginx-target>`** adalah IP instance Nginx Anda (yang menjalankan Nginx dan Prometheus).
 
 ---
 
-### **c. Menjalankan Pengujian dengan Docker**
+### **c. Overview Pengujian dengan docker up Grafana K6**
 Gunakan perintah berikut untuk menjalankan pengujian:
 ```bash
 docker run -v /opt/k6_repo:/opt/k6_repo grafana/k6 run --out influxdb=http://<ip-vm-testing>:8086 /opt/k6_repo/test/load.js
@@ -133,6 +116,9 @@ maka akan terjadi proses seperti ini
 ![Proces testing k6](docs/proses-testing-k6.png)
 
 ![Result Testing](docs/final-testing-result.png)
+
+dan gambar dibawah ini merupakan bukti bahwa pengujian berjalan dengan baik
+![Result Testing](docs/grafana-dashboard.png)
 
 Berikut penjelasan dari output tersebut:
 

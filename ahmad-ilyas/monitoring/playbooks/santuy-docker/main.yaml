@@ -69,4 +69,15 @@
     ansible.builtin.command:
       cmd: "docker run -v /opt/k6_repo:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
       chdir: "{{ repo_dest }}"
+    register: load_test_result
     when: "'tag_testing_server' in group_names"
+    tags:
+      - load_test
+
+  - name: Show the output of the Load Test
+    ansible.builtin.debug:
+      msg: "{{ load_test_result.stdout }}" 
+    when: load_test_result is defined  
+    tags:
+      - load_test
+
