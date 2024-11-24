@@ -74,10 +74,12 @@
     tags:
       - load_test
 
-  - name: Show the output of the Load Test
-    ansible.builtin.debug:
-      msg: "{{ load_test_result.stdout }}" 
+  - name: Save the output of the Load Test to a file
+    ansible.builtin.copy:
+      content: "{{ load_test_result.stdout }}"
+      dest: "/root/seal-batch-7-live-demo/ahmad-ilyas/monitoring/test_result.txt"
     when: "'tag_testing_server' in group_names"
     tags:
       - load_test
+
 
