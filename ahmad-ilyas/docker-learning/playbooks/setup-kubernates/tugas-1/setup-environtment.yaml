@@ -1,0 +1,93 @@
+---
+- name: Kubernetes Deployment Playbook
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Create namespaces
+    kubernetes.core.k8s_namespace:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - development
+    - staging
+    - production
+    register: namespaces
+
+  - name: Create nginx deployment in development namespace
+    kubernetes.core.k8s:
+      kubeconfig: "~/.kube/config"
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+          namespace: development
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: "juniyasyos/sib-ec2:1.0.0" 
+                ports:
+                - containerPort: 80
+    when: "'development' in namespaces.results | map(attribute='name') | list"
+
+  - name: Create nginx deployment in staging namespace
+    kubernetes.core.k8s:
+      kubeconfig: "~/.kube/config"
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+          namespace: staging
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: "juniyasyos/sib-ec2:1.0.0" 
+                ports:
+                - containerPort: 80
+    when: "'staging' in namespaces.results | map(attribute='name') | list"
+
+  - name: Create nginx deployment in production namespace
+    kubernetes.core.k8s:
+      kubeconfig: "~/.kube/config"
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-deployment
+          namespace: production
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: nginx
+          template:
+            metadata:
+              labels:
+                app: nginx
+            spec:
+              containers:
+              - name: nginx
+                image: "juniyasyos/sib-ec2:1.0.0" 
+                ports:
+                - containerPort: 80
+    when: "'production' in namespaces.results | map(attribute='name') | list"

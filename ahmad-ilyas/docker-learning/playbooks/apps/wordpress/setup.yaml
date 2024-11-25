@@ -1,0 +1,10 @@
+- name: Synchronize Docker Compose file to remote server
+  ansible.builtin.synchronize:
+    src: /root/seal-batch-7-live-demo/ahmad-ilyas/docker-learning/playbooks/apps/wordpress/docker-compose.yml
+    dest: /home/{{ ansible_user }}/wordpress/
+    mode: push
+    recursive: no
+
+- name: Ensure Docker Compose is up
+  ansible.builtin.command:
+    cmd: "docker compose -f /home/{{ ansible_user }}/wordpress/docker-compose.yml -p wp up -d"

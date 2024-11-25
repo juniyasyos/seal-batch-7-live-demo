@@ -1,0 +1,124 @@
+---
+- name: Install Minikube and kubectl
+  hosts: all
+  become: true
+  tasks:
+  - name: Install required dependencies
+    apt:
+      name:
+      - curl
+      - apt-transport-https
+      - ca-certificates
+      state: present
+      update_cache: yes
+
+  # Download Minikube .deb package
+  - name: Download Minikube .deb package
+    get_url:
+      url: https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+      dest: /tmp/minikube_latest_amd64.deb
+
+  # Install Minikube .deb package
+  - name: Install Minikube .deb package
+    apt:
+      deb: /tmp/minikube_latest_amd64.deb
+
+  # Start Minikube
+  - name: Start Minikube
+    command: minikube start
+    register: minikube_start
+    failed_when: minikube_start.rc != 0
+
+  # Check if Minikube is running
+  - name: Verify Minikube kubectl context
+    command: minikube kubectl -- get pods -A
+    register: minikube_kubectl_check
+    failed_when: minikube_kubectl_check.rc != 0
+
+  - name: Display Minikube kubectl check result
+    debug:
+      msg: "{{ minikube_kubectl_check.stdout }}"
+
+  # Download kubectl binary
+  - name: Download kubectl binary
+    get_url:
+      url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      dest: /tmp/kubectl
+      mode: '0755'
+
+  # Download kubectl sha256 checksum
+  - name: Download kubectl checksum file
+    get_url:
+      url: "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+      dest: /tmp/kubectl.sha256
+
+  # Verify kubectl checksum
+  - name: Verify kubectl checksum
+    command: sha256sum --check /tmp/kubectl.sha256
+    register: kubectl_sha256_check
+    failed_when: kubectl_sha256_check.rc != 0
+
+  # Install kubectl binary
+  - name: Install kubectl binary
+    command: sudo install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl
+
+  # Verify kubectl installation
+  - name: Verify kubectl version
+    command: kubectl version --client
+    register: kubectl_version
+    failed_when: kubectl_version.rc != 0
+
+  - name: Display kubectl version
+    debug:
+      msg: "{{ kubectl_version.stdout }}"
+
+  # Update bash aliases for kubectl
+  - name: Update bash alias for kubectl
+    lineinfile:
+      path: ~/.bashrc
+      line: 'alias k=kubectl'
+
+  - name: Add kubectl completion to bashrc
+    lineinfile:
+      path: ~/.bashrc
+      line: 'complete -o default -F __start_kubectl k'
+
+  - name: Source .bashrc to apply alias and completion
+    shell: source ~/.bashrc
+
+  # Install kubectx and kubens
+  - name: Install kubectx
+    apt:
+      name: kubectx
+      state: present
+
+  - name: Verify kubectx installation
+    command: kubectx
+    register: kubectx_check
+
+  - name: Display kubectx output
+    debug:
+      msg: "{{ kubectx_check.stdout }}"
+
+  - name: Install kubens
+    apt:
+      name: kubens
+      state: present
+
+  - name: Verify kubens installation
+    command: kubens
+    register: kubens_check
+
+  - name: Display kubens output
+    debug:
+      msg: "{{ kubens_check.stdout }}"
+
+  # Get list of Kubernetes namespaces
+  - name: Get Kubernetes namespaces
+    command: kubectl get namespaces
+    register: namespaces
+    failed_when: namespaces.rc != 0
+
+  - name: Display Kubernetes namespaces
+    debug:
+      msg: "{{ namespaces.stdout }}"

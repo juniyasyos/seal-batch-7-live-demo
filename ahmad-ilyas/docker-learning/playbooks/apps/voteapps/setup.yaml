@@ -1,0 +1,9 @@
+- name: Clone repository docker
+  ansible.builtin.command:
+    cmd: "git clone https://github.com/ibnuislamy/sib7.git /home/{{ ansible_user }}/sib7"
+    executable: /bin/bash
+
+- name: Ensure Docker Compose is up
+  ansible.builtin.command:
+    cmd: "docker compose -f /home/{{ ansible_user }}/sib7/docker/example-voting-app/docker-compose.yml -p wp up -d"
+    executable: /bin/bash
