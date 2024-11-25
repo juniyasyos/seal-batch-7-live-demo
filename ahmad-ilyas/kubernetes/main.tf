@@ -163,7 +163,7 @@ resource "aws_instance" "this" {
   instance_type               = each.value.instance_type
   key_name                    = aws_key_pair.deployer.key_name
   subnet_id                   = aws_subnet.public1.id
-  security_groups             = [aws_security_group.allow_ssh.id, aws_security_group.monitoring-allow-ports.id]
+  security_groups             = [aws_security_group.docker_k8s_testing.id]
   associate_public_ip_address = true
 
   root_block_device {

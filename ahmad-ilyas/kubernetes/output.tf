@@ -38,7 +38,6 @@ output "instance_security_group" {
 output "vpc_security_groups" {
   description = "Security group IDs in the VPC"
   value       = [
-    aws_security_group.allow_ssh.id,
-    aws_security_group.monitoring-allow-ports.id
+    aws_security_group.docker_k8s_testing.id
   ]
 }
