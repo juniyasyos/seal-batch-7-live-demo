@@ -1,0 +1,44 @@
+---
+- name: Deploy Grafana K6 Configuration to Remote Servers
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: Check if Docker is installed
+    ansible.builtin.command:
+      cmd: docker --version
+    register: docker_installed
+    failed_when: false
+    changed_when: false
+
+  - name: Deploy Docker for contanerization
+    ansible.builtin.include_role:
+      name: docker
+    when: docker_installed.rc != 0
+
+  - name: Set private IP from ansible_default_ipv4.address backend-server-1
+    set_fact:
+      ip_target_backend: "{{ hostvars[groups['backend-server-1'][0]].ansible_default_ipv4.address }}"
+
+  - name: Set private IP from ansible_default_ipv4.address testing server
+    set_fact:
+      ip_target_testing: "{{ hostvars[groups['testing-server'][0]].ansible_default_ipv4.address }}"
+
+  - name: Set private IP from ansible_default_ipv4.address frontend-server
+    set_fact:
+      ip_target_frontend: "{{ hostvars[groups['frontend-server'][0]].ansible_default_ipv4.address }}"
+  
+  - name: Setup Logging & Monitoring
+    ansible.builtin.include_role:
+      name: monitoring
+    when: "'frontend-server' in group_names"
+  
+  - name: Setup Testing Grafana K6
+    ansible.builtin.include_role:
+      name: grafana-k6
+    when: "'testing-server' in group_names"
+  
+  
+
+  

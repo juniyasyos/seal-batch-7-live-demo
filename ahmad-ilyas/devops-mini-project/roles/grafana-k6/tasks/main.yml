@@ -1,0 +1,83 @@
+---
+- name: Install Snap if not installed=
+  ansible.builtin.package:
+    name: snapd
+    state: present
+
+- name: Ensure Snap service is started
+  ansible.builtin.service:
+    name: snapd
+    state: started
+    enabled: true
+
+- name: Check if K6 is installed
+  ansible.builtin.command:
+    cmd: snap list k6
+  register: snap_k6_check
+  failed_when: false
+  changed_when: snap_k6_check.rc != 0
+
+- name: Install K6 via Snap if not installed
+  ansible.builtin.command:
+    cmd: snap install k6
+  when: snap_k6_check.rc != 0
+
+- name: Clone Repository Grafana K6 if not already cloned
+  ansible.builtin.git:
+    repo: "https://github.com/agungnusako/k6"
+    dest: "/opt/k6_repo"
+    update: no
+
+- name: Ensure Docker Compose is up
+  ansible.builtin.shell:
+    cmd: |
+      docker compose -f /opt/k6_repo/docker-compose.yml up -d influxdb grafana
+  args:
+    executable: /bin/bash
+
+- name: Create test directory if it does not exist
+  ansible.builtin.file:
+    path: "opt/grafana-k6-testing/test"
+    state: directory
+    mode: '0755'
+
+- name: Ensure Load Test Script exists
+  ansible.builtin.copy:
+    dest: "/opt/k6_repo/test/load.js"
+    content: |
+      import http from "k6/http";
+      import { check, sleep } from "k6";
+
+      export const options = {
+        thresholds: {
+          http_req_duration: ["p(99) < 3000"],
+        },
+        stages: [
+          { duration: "30s", target: 15 },
+          { duration: "1m", target: 15 },
+          { duration: "20s", target: 0 },
+        ],
+      };
+
+      export default function () {
+        const url = "http://{{ ip_target }}/stub_status";
+        const res = http.get(url);
+        check(res, { "status was 200": (r) => r.status === 200 });
+        sleep(1);
+      }
+
+- name: Run Load Test with K6
+  ansible.builtin.command:
+    cmd: "docker run -v /opt/k6_repo:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
+    chdir: "opt/grafana-k6-testing"
+  register: load_test_result
+  tags:
+  - load_test
+
+- name: Save the output of the Load Test to a local file
+  local_action:
+    module: copy
+    content: "{{ load_test_result.stdout }}"
+    dest: "./load_test_result.txt"
+  tags:
+  - load_test
