@@ -90,7 +90,7 @@
 
 - name: Run Load Test with K6
   ansible.builtin.command:
-    cmd: "docker run -v /opt/grafana-k6-testing:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ip_server }}:8086 /opt/grafana-k6-testing/test/load.js"
+    cmd: "docker run -v /opt/grafana-k6-testing:/opt/grafana-k6-testing grafana/k6 run --out influxdb=http://{{ ip_server }}:8086 /opt/grafana-k6-testing/test/load.js"
     chdir: "/opt/grafana-k6-testing/"
   register: load_test_result
   vars:
