@@ -1,4 +1,12 @@
 ---
+- name: Debug testing role variables
+  ansible.builtin.debug:
+    msg:
+    - "IP Target: {{ ip_target }}"
+    - "IP Server: {{ ip_server }}"
+    - "Test Duration: {{ test_duration }}"
+    - "Test Target: {{ test_target }}"
+
 - name: Install Snap if not installed=
   ansible.builtin.package:
     name: snapd
@@ -25,13 +33,20 @@
 - name: Clone Repository Grafana K6 if not already cloned
   ansible.builtin.git:
     repo: "https://github.com/agungnusako/k6"
-    dest: "/opt/k6_repo"
+    dest: "/opt/grafana-k6-testing"
     update: no
+
+- name: Set proper permissions for the project directory
+  ansible.builtin.file:
+    path: "/opt/grafana-k6-testing"
+    owner: root
+    group: root
+    mode: '0755'
 
 - name: Ensure Docker Compose is up
   ansible.builtin.shell:
     cmd: |
-      docker compose -f /opt/k6_repo/docker-compose.yml up -d influxdb grafana
+      docker compose -f /opt/grafana-k6-testing/docker-compose.yml up -d influxdb grafana
   args:
     executable: /bin/bash
 
@@ -41,9 +56,22 @@
     state: directory
     mode: '0755'
 
+# - name: Ensure Complex Test Script exists
+#   ansible.builtin.template:
+#     dest: "/opt/grafana-k6-testing/test/complex_load_stress_spike_endurance.js"
+#     src: "testing-dasar.js.j2"
+
+# - name: Run Load Test with K6
+#   ansible.builtin.command:
+#     cmd: "docker run -v /opt/grafana-k6-testing:/opt/grafana-k6-testing grafana/k6 run --out influxdb=http://{{ ip_server }}:8086 /opt/grafana-k6-testing/test/complex_load_stress_spike_endurance.js"
+#     chdir: "/opt/grafana-k6-testing"
+#   register: load_test_result
+#   tags:
+#   - load_test
+
 - name: Ensure Load Test Script exists
   ansible.builtin.copy:
-    dest: "/opt/k6_repo/test/load.js"
+    dest: "/opt/grafana-k6-testing/test/load.js"
     content: |
       import http from "k6/http";
       import { check, sleep } from "k6";
@@ -53,9 +81,7 @@
           http_req_duration: ["p(99) < 3000"],
         },
         stages: [
-          { duration: "30s", target: 15 },
-          { duration: "1m", target: 15 },
-          { duration: "20s", target: 0 },
+          { duration: "{{ test_duration }}", target: {{ test_target }} },
         ],
       };
 
@@ -65,12 +91,25 @@
         check(res, { "status was 200": (r) => r.status === 200 });
         sleep(1);
       }
+  vars:
+    ip_target: "{{ ip_target }}"
 
 - name: Run Load Test with K6
   ansible.builtin.command:
-    cmd: "docker run -v /opt/k6_repo:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
-    chdir: "opt/grafana-k6-testing"
+    cmd: "docker run -v /opt/grafana-k6-testing:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
+    chdir: "{{ repo_dest }}"
   register: load_test_result
+  vars:
+    ip_server: "{{ ip_target_testing }}"
+  when: "'tag_testing_server' in group_names"
+  tags:
+  - load_test
+
+- name: Save the output of the Load Test to a local file
+  local_action:
+    module: copy
+    content: "{{ load_test_result.stdout }}"
+    dest: "./load_test_result.txt"
   tags:
   - load_test
 

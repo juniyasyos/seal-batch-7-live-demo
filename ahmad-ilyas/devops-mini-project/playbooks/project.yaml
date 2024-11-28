@@ -1,0 +1,59 @@
+- name: Define environment variables
+  set_fact:
+    env_vars:
+      GEMINI_TOKEN_API_KEY: "{{gemini_token}}"
+      NODE_ENV: "production"
+
+- name: Ensure repository is cloned
+  ansible.builtin.git:
+    repo: "{{ project_repo }}"
+    dest: "{{ project_dest }}"
+    update: yes
+    version: HEAD
+  register: repo_status
+
+- name: Verify repository update
+  ansible.builtin.debug:
+    msg: "Repository updated successfully: {{ repo_status.after }}"
+
+- name: Set proper permissions for the project directory
+  ansible.builtin.file:
+    path: "{{ project_dest }}"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Generate .env file
+  ansible.builtin.copy:
+    dest: "{{ project_dest }}/.env"
+    content: |
+      {% for key, value in env_vars.items() %}
+      {{ key }}={{ value }}
+      {% endfor %}
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Debug .env content
+  ansible.builtin.command:
+    cmd: cat "{{ project_dest }}/.env"
+  register: env_content
+
+- name: Display generated .env file content
+  ansible.builtin.debug:
+    msg: "{{ env_content.stdout }}"
+
+- name: Replace api python
+  ansible.builtin.lineinfile:
+    path: "{{project_dest}}/frontend/app/src/config/Gemini.js"
+    regexp: 'const response = await fetch("<url-api-python>/gemini", {'
+    line: 'const response = await fetch("http://{{ ip_target_frontend }}/gemini", {'
+    backup: yes
+    state: present
+
+- name: Ensure Docker Compose is up
+  ansible.builtin.shell:
+    cmd: |
+      sudo docker compose -f {{ project_dest }}/docker-compose.yaml up -d
+  args:
+    executable: /bin/bash

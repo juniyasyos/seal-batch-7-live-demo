@@ -1,47 +1,43 @@
-# Output untuk IP public instance
-output "ip_instance" {
-  description = "Public IP addresses of the instances"
+# Output untuk IP Public Instance
+output "public_ips" {
+  description = "Public IP addresses of all instances"
   value       = [for instance in aws_instance.this : instance.public_ip]
 }
 
 # Output untuk Subnet VPC
-output "vpc_subnet_public" {
-  description = "Public Subnet ID"
-  value       = aws_subnet.public.id
-}
-output "vpc_subnet_private" {
-  description = "Private Subnet ID"
-  value       = aws_subnet.private.id
+output "public_subnets" {
+  description = "Public subnet IDs"
+  value       = module.devops_vpc.public_subnets
 }
 
-# Output untuk Elastic IP
-output "vpc_elastic_ip" {
-  description = "Elastic IP address"
-  value       = aws_eip.eip.public_ip
+output "private_subnets" {
+  description = "Private subnet IDs"
+  value       = module.devops_vpc.private_subnets
 }
 
-# Output untuk Route Table
-output "vpc_route_table" {
-  description = "Public Route Table ID"
-  value       = aws_route_table.public.id
-}
-
-# Output untuk AMI Instance
-output "instance_ami" {
-  description = "AMI used by the instances"
+# Output untuk AMI yang Digunakan Instance
+output "instance_ami_ids" {
+  description = "AMI IDs used by instances"
   value       = [for instance in aws_instance.this : instance.ami]
 }
 
-# Output untuk Security Group Instance
-output "instance_security_group" {
-  description = "Security groups attached to instances"
-  value       = [for instance in aws_instance.this : instance.security_groups]
+# Output untuk Semua Security Groups di VPC
+output "all_security_group_ids" {
+  description = "All security group IDs in the VPC"
+  value       = concat(
+    module.devops_vpc.frontend_ids,
+    module.devops_vpc.backend_ids
+  )
 }
 
-# Output untuk Semua Security Groups di VPC
-output "vpc_security_groups" {
-  description = "Security group IDs in the VPC"
-  value       = [
-    aws_security_group.frontend.id, aws_security_group.backend.id
-  ]
+# Output untuk Instance IDs
+output "instance_ids" {
+  description = "All EC2 instance IDs"
+  value       = [for instance in aws_instance.this : instance.id]
+}
+
+# Output untuk Key Pair
+output "key_pair_name" {
+  description = "Key pair name used for EC2 instances"
+  value       = module.devops_vpc.keypair
 }

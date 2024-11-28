@@ -28,41 +28,29 @@ log() {
   echo "[$(date +'%Y-%m-%d %H:%M:%S')] $@"
 }
 
-# Fungsi untuk memastikan perizinan
+# Fungsi pengaturan perizinan
 ensure_permissions() {
-  log "Mengatur perizinan untuk direktori dan file..."
-  chmod -R 750 ./playbooks
-  chmod 640 ./playbooks/**/*.yaml
-  chown -R root:root ./playbooks
+  [ -d "./playbooks" ] || return
+  chmod -R 750 ./playbooks && chmod 640 ./playbooks/*.yaml && chown -R root:root ./playbooks
 }
 
-# Fungsi untuk Terraform
+# Fungsi Terraform
 run_terraform() {
   log "==> Inisialisasi Terraform"
   terraform init
-
-  if [ ! -f "terraform.tfstate" ] || [ "$TASK_ALL" == true ]; then
-    log "==> terraform.tfstate tidak ditemukan atau --task-all aktif, menjalankan terraform apply"
-    terraform apply -auto-approve
-  else
-    log "==> terraform.tfstate ditemukan, melewati terraform apply"
-  fi
+  [ -f "terraform.tfstate" ] && [ "$SKIP_TERRAFORM_APPLY" == true ] && log "==> terraform.tfstate ditemukan, melewati terraform apply" || terraform apply -auto-approve
 }
 
-# Fungsi untuk Ansible
+# Fungsi Ansible
 run_ansible() {
   log "==> Menjalankan playbook Ansible"
-  playbooks=(
-    "./playbooks/setup/main.yaml"
-  )
-
-  for playbook in "${playbooks[@]}"; do
-    log "==> Menjalankan playbook: $playbook"
-    ansible-playbook "$playbook"
-  done
+  # for playbook in ./playbooks/*.yaml; do
+  #   [ -f "$playbook" ] && ansible-playbook "$playbook" || log "Playbook $playbook tidak ditemukan."
+  # done
+  ansible-playbook ./playbooks/main.yaml
 }
 
-# Inisialisasi variabel default
+# Variabel default
 TASK_ALL=true
 SKIP_TERRAFORM_APPLY=false
 SKIP_ANSIBLE=false
@@ -79,24 +67,12 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-# Pastikan perizinan sudah benar
+# Eksekusi tugas
 ensure_permissions
+[ "$SKIP_TERRAFORM_APPLY" == false ] && run_terraform
+[ "$SKIP_ANSIBLE" == false ] && run_ansible
 
-# 1. Menjalankan Terraform jika tidak dilewati
-if [[ "$TASK_ALL" == true || "$SKIP_TERRAFORM_APPLY" == false ]]; then
-  run_terraform
-else
-  log "==> Lewati proses Terraform Apply (--skip-terraform-apply)"
-fi
-
-# 2. Menjalankan Ansible jika tidak dilewati
-if [[ "$TASK_ALL" == true && "$SKIP_ANSIBLE" == false ]]; then
-  run_ansible
-else
-  log "==> Lewati proses Ansible (--skip-ansible)"
-fi
-
-log "==> Server Ip Information"
-ansible-inventory --graph
+log "==> Informasi IP Server"
+ansible-inventory --graph || log "Gagal mendapatkan informasi inventory."
 
 log "==> Deployment selesai."

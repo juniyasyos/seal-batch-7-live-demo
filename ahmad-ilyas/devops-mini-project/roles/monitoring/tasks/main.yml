@@ -12,9 +12,9 @@
     name: docker
   when: docker_installed.rc != 0
 
-- name: Synchronize Docker configuration folder to remote server
-  ansible.builtin.synchronize:
-    src: tamplates/monitoring/
+- name: Synchronize folder to remote server
+  ansible.posix.synchronize:
+    src: "{{ role_path }}/templates/monitoring/"
     dest: /home/{{ ansible_user }}/monitoring_config/
     mode: push
     recursive: yes

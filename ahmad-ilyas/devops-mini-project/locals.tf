@@ -7,23 +7,17 @@ locals {
 
   # Definisi instance dengan detail
   instances = {
-    backend-server-1 = {
-      ami           = data.aws_ami.ubuntu.id
-      instance_type = "t2.micro"
-      subnet        = aws_subnet.private.id
-      sg            = aws_security_group.backend.id
-    },
     testing-server = {
       ami           = data.aws_ami.ubuntu.id
       instance_type = "t2.micro"
-      subnet        = aws_subnet.private.id
-      sg            = aws_security_group.backend.id
+      sg            = module.devops_vpc.frontend_ids[0]
+      subnet_id     = module.devops_vpc.public_subnets[1]
     },
     frontend-server = {
       ami           = data.aws_ami.ubuntu.id
-      instance_type = "t2.micro"
-      subnet        = aws_subnet.public.id
-      sg            = aws_security_group.frontend.id
+      instance_type = "t3.large"
+      sg            = module.devops_vpc.frontend_ids[0]
+      subnet_id     = module.devops_vpc.public_subnets[0]
     }
   }
 }

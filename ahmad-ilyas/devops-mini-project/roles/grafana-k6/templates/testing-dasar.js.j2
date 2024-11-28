@@ -1,0 +1,107 @@
+import http from "k6/http";
+import { check, sleep, group } from "k6";
+import { Trend, Rate, Counter } from "k6/metrics";
+
+// Variables for test duration and target load
+let test_duration = "{{ test_duration }}";
+let test_target = {{ test_target }};
+
+// Define custom metrics
+let responseTimeTrend = new Trend('response_time');
+let errorRate = new Rate('errors');
+let requestsCounter = new Counter('requests');
+
+export const options = {
+  thresholds: {
+    http_req_duration: ['p(99) < 3000'], 
+    errors: ['rate<0.1'],  
+    'response_time': ['p(95)<2000'], 
+  },
+  stages: [
+    { duration: "10s", target: 10 },    
+    { duration: test_duration, target: test_target }, 
+    { duration: "30s", target: test_target * 2 },  
+    { duration: "20s", target: 0 },    
+  ],
+  // VU (Virtual User) settings
+  vus: 100,  
+  duration: test_duration, 
+  setupTimeout: '2m',
+};
+
+// Define HTTP headers to simulate real browser behavior
+const headers = {
+  "User-Agent": "k6-load-test/1.0",
+  "Accept": "application/json",
+  "Content-Type": "application/json",
+};
+
+// Main function executed by each virtual user
+export default function () {
+  group("Load Testing - Homepage", function () {
+    const url = "http://{{ ip_target }}/";  // URL to test
+    const res = http.get(url, { headers: headers });
+
+    // Record metrics
+    responseTimeTrend.add(res.timings.duration);
+    requestsCounter.add(1);
+
+    // Custom assertions
+    check(res, {
+      "status was 200": (r) => r.status === 200,
+      "response time < 3s": (r) => r.timings.duration < 3000,
+    });
+
+    // Error rate
+    errorRate.add(res.status >= 400);
+  });
+
+  group("Stress Testing - Login", function () {
+    const loginUrl = "http://{{ ip_target }}/login";
+    const loginData = { username: "user", password: "password" };
+    const res = http.post(loginUrl, JSON.stringify(loginData), { headers: headers });
+
+    responseTimeTrend.add(res.timings.duration);
+    requestsCounter.add(1);
+
+    check(res, {
+      "login status was 200": (r) => r.status === 200,
+      "login response time < 3s": (r) => r.timings.duration < 3000,
+    });
+
+    errorRate.add(res.status >= 400);
+  });
+
+  group("Spike Testing - Submit Form", function () {
+    const formUrl = "http://{{ ip_target }}/submit";
+    const formData = { name: "John", message: "This is a spike test." };
+    const res = http.post(formUrl, JSON.stringify(formData), { headers: headers });
+
+    responseTimeTrend.add(res.timings.duration);
+    requestsCounter.add(1);
+
+    check(res, {
+      "form submission status was 200": (r) => r.status === 200,
+      "form response time < 3s": (r) => r.timings.duration < 3000,
+    });
+
+    errorRate.add(res.status >= 400);
+  });
+
+  group("Endurance Testing - API Request", function () {
+    const apiUrl = "http://{{ ip_target }}/api/v1/data";
+    const res = http.get(apiUrl, { headers: headers });
+
+    responseTimeTrend.add(res.timings.duration);
+    requestsCounter.add(1);
+
+    check(res, {
+      "API status was 200": (r) => r.status === 200,
+      "API response time < 3s": (r) => r.timings.duration < 3000,
+    });
+
+    errorRate.add(res.status >= 400);
+  });
+
+  sleep(1);
+}

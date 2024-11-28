@@ -1,0 +1,23 @@
+import http from "k6/http";
+import { check, sleep } from "k6";
+
+let test_duration = "{{ test_duration }}";
+let test_target = {{ test_target }};
+
+export const options = {
+  thresholds: {
+    http_req_duration: ["p(99) < 3000"],
+  },
+  stages: [
+    { duration: test_duration, target: test_target },
+    { duration: "1m", target: test_target },
+    { duration: "20s", target: 0 },
+  ],
+};
+
+export default function () {
+  const url = "http://{{ ip_target }}/stub_status";
+  const res = http.get(url);
+  check(res, { "status was 200": (r) => r.status === 200 });
+  sleep(1);
+}
