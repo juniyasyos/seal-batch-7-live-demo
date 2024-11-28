@@ -20,7 +20,7 @@ resource "aws_instance" "this" {
   instance_type               = each.value.instance_type
   key_name                    = module.devops_vpc.keypair
   subnet_id                   = each.value.subnet_id
-  security_groups             = [each.value.sg]
+  security_groups             = each.value.sg
   associate_public_ip_address = true
 
   tags = {

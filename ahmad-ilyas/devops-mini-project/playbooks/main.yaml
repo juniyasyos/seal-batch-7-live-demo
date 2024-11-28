@@ -90,8 +90,6 @@
         vars:
           ip_target: "{{ ip_target_frontend }}"
           ip_server: "{{ ip_target_testing }}"
-          test_duration: "{{ test_duration | default('1m') }}"
-          test_target: "{{ test_target | default('http://localhost') }}"
         when: "'tag_testing_server' in group_names"
 
     rescue:

@@ -1,12 +1,4 @@
 ---
-- name: Debug testing role variables
-  ansible.builtin.debug:
-    msg:
-    - "IP Target: {{ ip_target }}"
-    - "IP Server: {{ ip_server }}"
-    - "Test Duration: {{ test_duration }}"
-    - "Test Target: {{ test_target }}"
-
 - name: Install Snap if not installed=
   ansible.builtin.package:
     name: snapd
@@ -52,7 +44,7 @@
 
 - name: Create test directory if it does not exist
   ansible.builtin.file:
-    path: "opt/grafana-k6-testing/test"
+    path: "/opt/grafana-k6-testing/test"
     state: directory
     mode: '0755'
 
@@ -81,7 +73,9 @@
           http_req_duration: ["p(99) < 3000"],
         },
         stages: [
-          { duration: "{{ test_duration }}", target: {{ test_target }} },
+          { duration: "30s", target: 15 },
+          { duration: "1m", target: 15 },
+          { duration: "20s", target: 0 },
         ],
       };
 
@@ -96,8 +90,8 @@
 
 - name: Run Load Test with K6
   ansible.builtin.command:
-    cmd: "docker run -v /opt/grafana-k6-testing:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ansible_default_ipv4.address }}:8086 /opt/k6_repo/test/load.js"
-    chdir: "{{ repo_dest }}"
+    cmd: "docker run -v /opt/grafana-k6-testing:/opt/k6_repo grafana/k6 run --out influxdb=http://{{ ip_server }}:8086 /opt/grafana-k6-testing/test/load.js"
+    chdir: "/opt/grafana-k6-testing/"
   register: load_test_result
   vars:
     ip_server: "{{ ip_target_testing }}"
